@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toko Kelontong Digital</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('toko kelontong.jpeg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed; 
+            background-color: #f0f2f5; 
+            color: #000000; 
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+        .menu {
+            background: rgba(255, 300, 255, 0.5); /* Latar belakang semi-transparan */
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .form {
+            background: rgba(255, 255, 255, 0.8); /* Latar belakang semi-transparan */
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #e2803e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #ffba5f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #ffb049;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="menu">
+            <center><h1>🏪 Toko Kelontong Digital 👨🏻‍💻</h1>
+            <button onclick="showSection('produk')">📦 Kelola Produk</button>
+            <button onclick="showSection('pelanggan')">👥 Kelola Pelanggan</button>
+            <button onclick="showSection('transaksi')">💰 Transaksi Baru</button>
+            <button onclick="showSection('laporan')">📊 Laporan</button>
+        </center>
+        </div>
+
+        <!-- Form Produk -->
+        <div id="produk" class="form" style="display:none">
+            <h2>Manajemen Produk</h2>
+            <input type="text" id="produkId" placeholder="ID Produk">
+            <input type="text" id="namaProduk" placeholder="Nama Produk">
+            <input type="number" id="hargaProduk" placeholder="Harga">
+            <input type="number" id="stokProduk" placeholder="Stok">
+            
+            <button onclick="tambahProduk()">Simpan Produk</button>
+            
+            <h3>Daftar Produk</h3>
+            <div id="daftarProduk"></div>
+        </div>
+
+        <!-- Form Pelanggan -->
+        <div id="pelanggan" class="form" style="display:none">
+            <h2>Manajemen Pelanggan</h2>
+            <input type="text" id="pelangganId" placeholder="ID Pelanggan">
+            <input type="text" id="namaPelanggan" placeholder="Nama Pelanggan">
+            <input type="text" id="alamatPelanggan" placeholder="Alamat">
+            <input type="text" id="telpPelanggan" placeholder="No. Telepon">
+            
+            <button onclick="tambahPelanggan()">Simpan Pelanggan</button>
+            
+            <h3>Daftar Pelanggan</h3>
+            <div id="daftarPelanggan"></div>
+        </div>
+
+        <!-- Form Transaksi -->
+        <div id="transaksi" class="form" style="display:none">
+            <h2>Transaksi Baru</h2>
+            
+            <select id="selectPelanggan">
+                <option value="">Pilih Pelanggan</option>
+                <!-- Dropdown pelanggan akan diisi secara dinamis -->
+            </select>
+            
+            <div id="itemsTransaksi">
+                <div class="item">
+                    <select class="produkSelect"></select>
+                    <input type="number" class="qty" placeholder="Qty" min="1">
+                    <button onclick="tambahItem(this)">➕</button>
+                </div>
+            </div>
+
+            <button onclick="prosesTransaksi()">💵 Proses Transaksi</button>
+            
+            <div id="detailTransaksi"></div>
+        </div>
+
+        <!-- Laporan -->
+        <div id="laporan" class="form" style="display:none">
+            <h2>Laporan dan Rekapitulasi</h2>
+            
+            <button onclick="generateLaporan('stok')">📦 Laporan Stok</button>
+            
+            <button onclick="generateLaporan('pelanggan')">👥 Laporan Pelanggan</button>
+
+          	<button onclick="generateLaporan('harian')">📅 Rekap Harian</button>
+
+          	<button onclick="generateLaporan('bulanan')">📆 Rekap Bulanan</button>
+
+          	<button onclick="generateLaporan('tahunan')">🗓️ Rekap Tahunan</button>
+      	</div>
+    </div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+        let customers = JSON.parse(localStorage.getItem('customers')) || [];
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+      	// Tampilkan section
+      	function showSection(section) {
+          	document.querySelectorAll('.form').forEach(div => div.style.display = 'none');
+          	document.getElementById(section).style.display = 'block';
+          	refreshData();
+      	}
+
+      	// Refresh data tampilan
+      	function refreshData() {
+          	// Update daftar produk
+          	document.getElementById('daftarProduk').innerHTML = `
+              	<table>
+                  	<tr><th>ID</th><th>Nama</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr>
+                  	${products.map((p, index) => `
+                      	<tr>
+                          	<td>${p.id}</td>
+                          	<td>${p.nama}</td>
+                          	<td>Rp${p.harga}</td>
+                          	<td>${p.stok}</td>
+                          	<td><button onclick='editProduk(${index})'>Edit</button> 
+                              	  <button onclick='hapusProduk(${index})'>Hapus</button></td>
+                      	</tr>`).join('')}
+              	</table>`;
+          
+          	// Update daftar pelanggan
+          	document.getElementById('daftarPelanggan').innerHTML = `
+              	<table>
+                  	<tr><th>ID</th><th>Nama</th><th>Alamat</th><th>Telepon</th></tr>
+                  	${customers.map(c => `
+                      	<tr>
+                          	<td>${c.id}</td>
+                          	<td>${c.nama}</td>
+                          	<td>${c.alamat}</td>
+                          	<td>${c.telepon}</td>
+                      	</tr>`).join('')}
+              	</table>`;
+          
+          	// Update dropdown produk di transaksi
+          	document.querySelectorAll('.produkSelect').forEach(select => {
+              	select.innerHTML = products.map(p => 
+                  	`<option value="${p.id}">${p.nama} (Rp${p.harga})</option>`
+              	).join('');
+          	});
+
+          	// Update dropdown pelanggan
+          	document.getElementById('selectPelanggan').innerHTML = `
+              	<option value="">Pilih Pelanggan</option>
+              	${customers.map(c => `
+                  	<option value="${c.id}">${c.nama}</option>`
+              	).join('')}`;
+      	}
+
+      	function tambahProduk() {
+          	const product = {
+              	id: document.getElementById('produkId').value,
+              	nama: document.getElementById('namaProduk').value,
+              	harga: parseInt(document.getElementById('hargaProduk').value),
+              	stok: parseInt(document.getElementById('stokProduk').value)
+          	};
+          
+          	if (product.id && product.nama && product.harga > 0 && product.stok >= 0) {
+              	const existingIndex = products.findIndex(p => p.id === product.id);
+              
+              	if (existingIndex > -1) { // Jika produk sudah ada, update
+                  	products[existingIndex] = product; // Update produk
+              	} else { // Jika produk baru
+                  	products.push(product); // Tambah produk baru
+              	}
+              
+              	localStorage.setItem('products', JSON.stringify(products));
+              	refreshData();
+              
+              	alert("Produk berhasil disimpan!");
+              
+              	clearInputProduk(); // Reset input form
+          	} else {
+              	alert("Silakan lengkapi semua field dengan benar!");
+          	}
+      	}
+
+      	function clearInputProduk() {
+          	document.getElementById('produkId').value = '';
+          	document.getElementById('namaProduk').value = '';
+          	document.getElementById('hargaProduk').value = '';
+          	document.getElementById('stokProduk').value = '';
+      	}
+
+      	function editProduk(index) {
+          	const product = products[index];
+          
+          	document.getElementById('produkId').value = product.id;
+          	document.getElementById('namaProduk').value = product.nama;
+          	document.getElementById('hargaProduk').value = product.harga;
+          	document.getElementById('stokProduk').value = product.stok;
+
+          	showSection('produk'); // Tampilkan section produk
+      	}
+
+      	function hapusProduk(index) {
+          	if (confirm("Apakah Anda yakin ingin menghapus produk ini?")) {
+              	products.splice(index, 1); // Hapus produk dari array
+              	localStorage.setItem('products', JSON.stringify(products));
+              	refreshData();
+              
+              	alert("Produk berhasil dihapus!");
+          	}
+      	}
+
+      	function tambahPelanggan() {
+          	const customer = {
+              	id: document.getElementById('pelangganId').value,
+              	nama: document.getElementById('namaPelanggan').value,
+              	alamat: document.getElementById('alamatPelanggan').value,
+              	telpon: document.getElementById('telpPelanggan').value
+          	};
+          
+          	if (customer.id && customer.nama && customer.alamat && customer.telpon) {
+              	customers.push(customer);
+              	localStorage.setItem('customers', JSON.stringify(customers));
+              
+              	refreshData();
+              
+              	alert("Pelanggan berhasil disimpan!");
+              
+              	clearInputPelanggan(); // Reset input form
+          	} else {
+              	alert("Silakan lengkapi semua field dengan benar!");
+          	}
+      	}
+
+      	function clearInputPelanggan() {
+          	document.getElementById('pelangganId').value = '';
+          	document.getElementById('namaPelanggan').value = '';
+          	document.getElementById('alamatPelanggan').value = '';
+          	document.getElementById('telpPelanggan').value = '';
+      	}
+
+      	function tambahItem(button) {
+          const newItem = document.createElement("div");
+          newItem.className = "item";
+          newItem.innerHTML = `
+              <select class='produkSelect'></select> 
+              <input type='number' class='qty' placeholder='Qty' min='1'>
+              <button onclick='tambahItem(this)'>➕</button> 
+              <button onclick='hapusItem(this)'>❌ Hapus Item </button>`;
+          button.parentNode.parentNode.appendChild(newItem);
+          refreshData();
+      }
+
+      function hapusItem(button) {
+          button.parentNode.remove();
+      }
+
+      function prosesTransaksi() {
+          const transaction = {
+              id: 'TRX-' + Date.now(),
+              tanggal: new Date().toLocaleString(),
+              pelanggan: document.getElementById("selectPelanggan").value,
+              items: [],
+              total: 0,
+          };
+
+          document.querySelectorAll(".item").forEach((item) => {
+              const produkId = item.querySelector(".produkSelect").value; 
+              const qty = parseInt(item.querySelector(".qty").value); 
+              const product = products.find((p) => p.id === produkId);
+
+              if (product && qty <= product.stok) { 
+                  transaction.items.push({
+                      produk: product.nama,
+                      qty,
+                      harga: product.harga,
+                      subtotal: qty * product.harga,
+                  });
+                  transaction.total += qty * product.harga; 
+                  product.stok -= qty; 
+              }
+          });
+
+          transactions.push(transaction); 
+          localStorage.setItem("products", JSON.stringify(products)); 
+          localStorage.setItem("transactions", JSON.stringify(transactions)); 
+
+          generateInvoice(transaction); 
+          refreshData(); 
+      }
+
+      function generateLaporan(type) { 
+          let content = ""; 
+          const date = new Date(); 
+
+          switch (type) { 
+              case "stok": 
+                  content += `LAPORAN STOK\n${date.toLocaleString()}\n\n`; 
+                  content += products.map((p) => `${p.id} | ${p.nama.padEnd(20)} | Stok : ${p.stok.toString().padStart(4)} | Rp${p.harga}`).join("\n"); 
+                  break;
+
+              case "pelanggan": 
+                  content += `LAPORAN PELANGGAN\n${date.toLocaleString()}\n\n`; 
+                  content += customers.map((c) => `${c.id} | ${c.nama.padEnd(15)} | ${c.alamat.padEnd(20)} | ${c.telpon}`).join("\n"); 
+                  break;
+
+              default:
+                  const filteredTransactions = transactions.filter((t) => { 
+                      const tDate = new Date(t.tanggal); 
+
+                      switch (type) { 
+                          case "harian": return tDate.toDateString() === date.toDateString(); 
+                          case "bulanan": return tDate.getMonth() === date.getMonth(); 
+                          case "tahunan": return tDate.getFullYear() === date.getFullYear(); 
+                      } 
+                  }); 
+
+                  content += `REKAPITULASI ${type.toUpperCase()}\n${date.toLocaleString()}\n\n`; 
+                  content += filteredTransactions.map((t) => `${t.id} | ${t.tanggal} | Total : Rp${t.total}`).join("\n"); 
+
+                  const totalPenjualan = filteredTransactions.reduce((sum, t) => sum + t.total, 0); 
+                  content += `\n\nTOTAL PENJUALAN : Rp${totalPenjualan}`; 
+          }
+
+          const blob = new Blob([content], { type : "text/plain"}); 
+          const url = URL.createObjectURL(blob); 
+          const a = document.createElement("a"); 
+
+          a.href = url; a.download=`Laporan_${type}_${date.getTime()}.txt`; a.click(); }
+
+      function generateInvoice(transaction) { const content =
+         `FAKTUR PENJUALAN\nNo : ${transaction.id}\nTanggal : ${transaction.tanggal}\n\nItem:\n`;
+         transaction.items.forEach(item =>
+         { content += `${item.produk.padEnd(20)} ${item.qty}x Rp${item.harga} =
+         Rp${item.subtotal}\n`; });
+         content += `\nTOTAL : Rp${transaction.total}`;
+
+         const blob =
+         new Blob([content], { type : "text/plain"}); const url =
+         URL.createObjectURL(blob); const a =
+         document.createElement("a"); a.href =
+         url; a.download=`Invoice_${transaction.id}.txt`; a.click(); }
+
+      // Inisialisasi awal
+      refreshData();
+    </script>
+
+    </body>
+
+    </html>
